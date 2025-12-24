@@ -762,6 +762,11 @@ async function generateElevenLabsAudio(text, voiceId = ELEVENLABS_VOICE_ID) {
             try {
                 errorData = await response.json();
                 console.error('ElevenLabs API error details:', JSON.stringify(errorData, null, 2));
+                
+                // Check for quota exceeded error
+                if (errorData.detail?.status === 'quota_exceeded') {
+                    console.warn('ElevenLabs quota exceeded. Please check your plan or wait for quota reset.');
+                }
             } catch (e) {
                 const text = await response.text();
                 console.error('ElevenLabs API error (text):', text);
@@ -832,8 +837,8 @@ function initPhoneticPlayer() {
         phoneticPlayButton.disabled = true;
         
         try {
-            // Generate audio using ElevenLabs
-            const audioURL = await generateElevenLabsAudio(wordToPronounce);
+            // Get audio URL (from cache or generate new via getAudioURL)
+            const audioURL = await getAudioURL(wordToPronounce);
             
             if (audioURL) {
                 // Play the audio
@@ -848,8 +853,10 @@ function initPhoneticPlayer() {
                 currentAudio.onended = () => {
                     phoneticPlayButton.classList.remove('playing');
                     currentAudio = null;
-                    // Clean up the blob URL
-                    URL.revokeObjectURL(audioURL);
+                    // Only revoke if it's a blob URL (starts with blob:)
+                    if (audioURL.startsWith('blob:')) {
+                        URL.revokeObjectURL(audioURL);
+                    }
                 };
                 
                 currentAudio.onerror = (error) => {
@@ -857,7 +864,9 @@ function initPhoneticPlayer() {
                     phoneticPlayButton.classList.remove('loading', 'playing');
                     phoneticPlayButton.disabled = false;
                     currentAudio = null;
-                    URL.revokeObjectURL(audioURL);
+                    if (audioURL.startsWith('blob:')) {
+                        URL.revokeObjectURL(audioURL);
+                    }
                 };
                 
                 // Start playing
@@ -867,13 +876,22 @@ function initPhoneticPlayer() {
                     phoneticPlayButton.disabled = false;
                 });
             } else {
+                // No audio available (quota exceeded or other error)
                 phoneticPlayButton.classList.remove('loading');
                 phoneticPlayButton.disabled = false;
+                phoneticPlayButton.classList.add('error');
+                setTimeout(() => {
+                    phoneticPlayButton.classList.remove('error');
+                }, 2000);
             }
         } catch (error) {
             console.error('Error in phonetic player:', error);
             phoneticPlayButton.classList.remove('loading');
             phoneticPlayButton.disabled = false;
+            phoneticPlayButton.classList.add('error');
+            setTimeout(() => {
+                phoneticPlayButton.classList.remove('error');
+            }, 2000);
         }
     });
 }

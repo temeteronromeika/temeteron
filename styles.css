@@ -452,6 +452,18 @@ body {
     cursor: wait;
 }
 
+.phonetic-play-button.error {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.4);
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
 .phonetic-play-icon {
     font-size: 0.875rem;
     line-height: 1;
