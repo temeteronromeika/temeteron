@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temeteron</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="dark-mode">
+    <header class="header">
+        <div class="header-content">
+            <div class="wordmark">Temeteron</div>
+            <div class="header-controls">
+                <div class="language-selector" id="languageSelector">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <span class="lang-separator">·</span>
+                    <button class="lang-btn" data-lang="gr">GR</button>
+                    <span class="lang-separator">·</span>
+                    <button class="lang-btn" data-lang="tr">TR</button>
+                </div>
+                <button class="mode-toggle" id="modeToggle">
+                    <span class="toggle-icon">☀</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="word-search-section">
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Search a Romeika word…"
+                        autocomplete="off"
+                    >
+                    <div class="suggestions-container" id="suggestionsContainer" style="display: none;">
+                        <div class="suggestions-label" data-translate="didYouMean">Did you mean?</div>
+                        <div class="suggestions-list" id="suggestionsList"></div>
+                    </div>
+                </div>
+                <p class="search-helper" data-translate="searchHelper">Search Romeika words and explore meanings, translations, and etymology.</p>
+            </div>
+        </section>
+
+        <section class="hero-section" id="heroSection">
+            <div class="hero-background"></div>
+            <div class="hero-content">
+                <div class="hero-default" id="heroDefault">
+                    <h1 class="hero-title">Temeteron</h1>
+                    <p class="hero-subtitle">Temeteron (our) language, culture</p>
+                </div>
+                <div class="hero-result" id="heroResult" style="display: none;">
+                    <h1 class="hero-title" id="heroWord"></h1>
+                    <div class="hero-result-details">
+                        <div class="hero-result-row">
+                            <span class="hero-result-label" data-translate="greekLabel">Greek:</span>
+                            <span class="hero-result-value" id="heroGreek"></span>
+                        </div>
+                        <div class="hero-result-row">
+                            <span class="hero-result-label" data-translate="englishLabel">English:</span>
+                            <span class="hero-result-value" id="heroEnglish"></span>
+                        </div>
+                        <div class="hero-result-row">
+                            <span class="hero-result-label" data-translate="turkishLabel">Turkish:</span>
+                            <span class="hero-result-value" id="heroTurkish"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="description-section">
+            <p class="description-text" data-translate="description">Temeteron is a digital lexicon and translation resource for Romeika (Pontic Greek), aiming to document, preserve, and make accessible the vocabulary, meanings, and linguistic heritage of the region.</p>
+        </section>
+
+        <section class="word-of-day-section">
+            <div class="word-card">
+                <h3 class="word-card-title" data-translate="wordOfDay">Word of the Day</h3>
+                <div class="word-card-content">
+                    <div class="word-card-row">
+                        <span class="word-card-label">Romeika:</span>
+                        <span class="word-card-value">ποντιά</span>
+                    </div>
+                    <div class="word-card-row">
+                        <span class="word-card-label">Greek:</span>
+                        <span class="word-card-value">ποντίος</span>
+                    </div>
+                    <div class="word-card-row">
+                        <span class="word-card-label">Turkish:</span>
+                        <span class="word-card-value">Karadenizli</span>
+                    </div>
+                    <div class="word-card-row">
+                        <span class="word-card-label">English:</span>
+                        <span class="word-card-value">Pontic, from the Black Sea region</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <div class="result-container">
+                <h2 class="result-word" id="resultWord"></h2>
+                <div class="result-details">
+                    <div class="result-row">
+                        <span class="result-label" data-translate="greekLabel">Greek:</span>
+                        <span class="result-value" id="resultGreek"></span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-translate="turkishLabel">Turkish:</span>
+                        <span class="result-value" id="resultTurkish"></span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label" data-translate="englishLabel">English:</span>
+                        <span class="result-value" id="resultEnglish"></span>
+                    </div>
+                    <div class="result-etymology" id="resultEtymology"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
