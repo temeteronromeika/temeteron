@@ -404,12 +404,71 @@ body {
     letter-spacing: 0.01em;
 }
 
+.hero-phonetic-ipa-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .hero-phonetic-ipa {
     font-size: clamp(0.875rem, 1.75vw, 1.125rem);
     font-weight: 400;
     font-style: italic;
     color: rgba(255, 255, 255, 0.7);
     letter-spacing: 0.01em;
+}
+
+.phonetic-play-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.phonetic-play-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.1);
+}
+
+.phonetic-play-button.playing {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.phonetic-play-button.loading {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.phonetic-play-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.phonetic-play-icon {
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.dark-mode .phonetic-play-button {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.light-mode .phonetic-play-button {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .phonetic-play-button:hover {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .hero-subtitle {

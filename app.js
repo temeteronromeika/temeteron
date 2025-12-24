@@ -63,6 +63,7 @@ const searchLanguageSelector = document.getElementById('searchLanguageSelector')
 const searchLangButtons = searchLanguageSelector ? searchLanguageSelector.querySelectorAll('.search-lang-btn') : [];
 const heroPhoneticLatin = document.getElementById("heroPhoneticLatin");
 const heroPhoneticIpa = document.getElementById("heroPhoneticIpa");
+const phoneticPlayButton = document.getElementById("phoneticPlayButton");
 const musicPlayer = document.getElementById('musicPlayer');
 const musicPlayButton = document.getElementById('musicPlayButton');
 const musicCloseButton = document.getElementById('musicCloseButton');
@@ -301,12 +302,17 @@ function displayResultInHero(word, data) {
     }
     
     // Display phonetic_ipa if present
-    if (heroPhoneticIpa) {
-        if (data.phonetic_ipa && data.phonetic_ipa.trim()) {
+    if (heroPhoneticIpa && phoneticPlayButton) {
+        const wrapper = phoneticPlayButton.parentElement;
+        if (data.phonetic_ipa && data.phonetic_ipa.trim() && wrapper) {
             heroPhoneticIpa.textContent = data.phonetic_ipa;
-            heroPhoneticIpa.style.display = 'block';
-        } else {
-            heroPhoneticIpa.style.display = 'none';
+            wrapper.style.display = 'flex';
+            // Store word for pronunciation
+            wrapper.dataset.word = word;
+            wrapper.dataset.phoneticIpa = data.phonetic_ipa;
+            wrapper.dataset.phoneticLatin = data.phonetic_latin || word;
+        } else if (wrapper) {
+            wrapper.style.display = 'none';
         }
     }
     
@@ -669,11 +675,215 @@ function initMusicPlayer() {
     }
 }
 
+// Phonetic Pronunciation with ElevenLabs + Supabase Storage Cache
+const ELEVENLABS_API_KEY = 'sk_9a83e280dce6178924e52e1cba1099afb65eea57f70d5e4e';
+const ELEVENLABS_VOICE_ID = 'wykE1oPxFaMrxdpOtFt6';
+const AUDIO_BUCKET = 'pronunciations'; // Supabase Storage bucket name
+
+// Generate a unique filename from text
+function getAudioFileName(text, voiceId = ELEVENLABS_VOICE_ID) {
+    // Normalize text: lowercase, remove special chars, replace spaces with underscores
+    const normalized = text.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 50); // Limit length
+    return `${normalized}_${voiceId}.mp3`;
+}
+
+// Check if audio exists in Supabase Storage
+async function getCachedAudio(text, voiceId = ELEVENLABS_VOICE_ID) {
+    try {
+        const fileName = getAudioFileName(text, voiceId);
+        const { data, error } = await supabaseClient.storage
+            .from(AUDIO_BUCKET)
+            .download(fileName);
+        
+        if (error) {
+            // File doesn't exist
+            return null;
+        }
+        
+        // File exists, return blob URL
+        return URL.createObjectURL(data);
+    } catch (error) {
+        console.error('Error checking cache:', error);
+        return null;
+    }
+}
+
+// Save audio to Supabase Storage
+async function saveAudioToCache(text, audioBlob, voiceId = ELEVENLABS_VOICE_ID) {
+    try {
+        const fileName = getAudioFileName(text, voiceId);
+        const { error } = await supabaseClient.storage
+            .from(AUDIO_BUCKET)
+            .upload(fileName, audioBlob, {
+                contentType: 'audio/mpeg',
+                upsert: true // Overwrite if exists
+            });
+        
+        if (error) {
+            console.error('Error saving to cache:', error);
+        } else {
+            console.log('Audio saved to cache:', fileName);
+        }
+    } catch (error) {
+        console.error('Error in saveAudioToCache:', error);
+    }
+}
+
+// Generate audio with ElevenLabs API
+async function generateElevenLabsAudio(text, voiceId = ELEVENLABS_VOICE_ID) {
+    if (!ELEVENLABS_API_KEY) {
+        console.error('ElevenLabs API key not configured');
+        return null;
+    }
+    
+    try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: 'eleven_multilingual_v2', // v3 might not be available, using v2
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+                console.error('ElevenLabs API error details:', JSON.stringify(errorData, null, 2));
+            } catch (e) {
+                const text = await response.text();
+                console.error('ElevenLabs API error (text):', text);
+                errorData = { message: text };
+            }
+            console.error('Response status:', response.status);
+            return null;
+        }
+        
+        const audioBlob = await response.blob();
+        return audioBlob;
+    } catch (error) {
+        console.error('Error generating audio:', error);
+        return null;
+    }
+}
+
+// Get audio URL (from cache or generate new)
+async function getAudioURL(text, voiceId = ELEVENLABS_VOICE_ID) {
+    // First, check cache
+    const cachedURL = await getCachedAudio(text, voiceId);
+    if (cachedURL) {
+        console.log('Using cached audio for:', text);
+        return cachedURL;
+    }
+    
+    // Not in cache, generate new
+    console.log('Generating new audio for:', text);
+    const audioBlob = await generateElevenLabsAudio(text, voiceId);
+    
+    if (audioBlob) {
+        // Save to cache for future use
+        await saveAudioToCache(text, audioBlob, voiceId);
+        // Return blob URL
+        return URL.createObjectURL(audioBlob);
+    }
+    
+    return null;
+}
+
+// Phonetic Pronunciation
+function initPhoneticPlayer() {
+    if (!phoneticPlayButton) return;
+    
+    let currentAudio = null;
+    
+    phoneticPlayButton.addEventListener('click', async () => {
+        const wrapper = phoneticPlayButton.parentElement;
+        if (!wrapper) return;
+        
+        // Stop any currently playing audio
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+            phoneticPlayButton.classList.remove('playing');
+        }
+        
+        // Get word to pronounce (prefer phonetic_latin, fallback to word)
+        const wordToPronounce = wrapper.dataset.phoneticLatin || wrapper.dataset.word || '';
+        
+        if (!wordToPronounce) {
+            console.warn('No word to pronounce');
+            return;
+        }
+        
+        // Show loading state
+        phoneticPlayButton.classList.add('loading');
+        phoneticPlayButton.disabled = true;
+        
+        try {
+            // Generate audio using ElevenLabs
+            const audioURL = await generateElevenLabsAudio(wordToPronounce);
+            
+            if (audioURL) {
+                // Play the audio
+                currentAudio = new Audio(audioURL);
+                
+                currentAudio.onplay = () => {
+                    phoneticPlayButton.classList.remove('loading');
+                    phoneticPlayButton.classList.add('playing');
+                    phoneticPlayButton.disabled = false;
+                };
+                
+                currentAudio.onended = () => {
+                    phoneticPlayButton.classList.remove('playing');
+                    currentAudio = null;
+                    // Clean up the blob URL
+                    URL.revokeObjectURL(audioURL);
+                };
+                
+                currentAudio.onerror = (error) => {
+                    console.error('Audio playback error:', error);
+                    phoneticPlayButton.classList.remove('loading', 'playing');
+                    phoneticPlayButton.disabled = false;
+                    currentAudio = null;
+                    URL.revokeObjectURL(audioURL);
+                };
+                
+                // Start playing
+                currentAudio.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                    phoneticPlayButton.classList.remove('loading');
+                    phoneticPlayButton.disabled = false;
+                });
+            } else {
+                phoneticPlayButton.classList.remove('loading');
+                phoneticPlayButton.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error in phonetic player:', error);
+            phoneticPlayButton.classList.remove('loading');
+            phoneticPlayButton.disabled = false;
+        }
+    });
+}
+
 // Initialize theme and language on load
 initTheme();
 initLanguage();
 initSearchLanguage();
 initMusicPlayer();
+initPhoneticPlayer();
 
 // Handle Enter key for immediate search
 searchInput.addEventListener('keydown', (e) => {
