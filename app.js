@@ -8,7 +8,8 @@ const translations = {
         greekLabel: 'Greek:',
         turkishLabel: 'Turkish:',
         englishLabel: 'English:',
-        didYouMean: 'Did you mean?'
+        didYouMean: 'Did you mean?',
+        playFromOurRegion: 'Play from our region'
     },
     gr: {
         searchPlaceholder: 'Αναζήτηση romeika λέξης…',
@@ -18,7 +19,8 @@ const translations = {
         greekLabel: 'Ελληνικά:',
         turkishLabel: 'Τουρκικά:',
         englishLabel: 'Αγγλικά:',
-        didYouMean: 'Εννοείτε;'
+        didYouMean: 'Εννοείτε;',
+        playFromOurRegion: 'Παίξτε από τις περιοχές μας'
     },
     tr: {
         searchPlaceholder: 'Romeika kelimesi ara…',
@@ -28,7 +30,8 @@ const translations = {
         greekLabel: 'Yunanca:',
         turkishLabel: 'Türkçe:',
         englishLabel: 'İngilizce:',
-        didYouMean: 'Bunu mu demek istediniz?'
+        didYouMean: 'Bunu mu demek istediniz?',
+        playFromOurRegion: 'Bizim oralardan çal'
     }
 };
 
@@ -60,6 +63,11 @@ const searchLanguageSelector = document.getElementById('searchLanguageSelector')
 const searchLangButtons = searchLanguageSelector ? searchLanguageSelector.querySelectorAll('.search-lang-btn') : [];
 const heroPhoneticLatin = document.getElementById("heroPhoneticLatin");
 const heroPhoneticIpa = document.getElementById("heroPhoneticIpa");
+const musicPlayer = document.getElementById('musicPlayer');
+const musicPlayButton = document.getElementById('musicPlayButton');
+const musicCloseButton = document.getElementById('musicCloseButton');
+const musicRestoreButton = document.getElementById('musicRestoreButton');
+const youtubeAudioPlayer = document.getElementById('youtubeAudioPlayer');
 
 // Search language management
 let currentSearchLanguage = localStorage.getItem('temeteron-search-language') || 'romeika';
@@ -242,10 +250,10 @@ async function performSearch(query) {
             // Search in specific language field
             const searchField = currentSearchLanguage;
             const result = await supabaseClient
-                .from('words')
+            .from('words')
                 .select('*')
                 .ilike(searchField, `%${trimmedQuery}%`)
-                .limit(20);
+            .limit(20);
             data = result.data;
             error = result.error;
         }
@@ -452,10 +460,220 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Music Player - YouTube IFrame API
+let youtubePlayer = null;
+let isPlaying = false;
+let isPlayerReady = false;
+const PLAYLIST_ID = 'PLS2AaukaGyNihFFJpBLYm7sPaXTK2BUGo';
+
+// YouTube API callback - MUST be global
+function initYouTubePlayer() {
+    if (youtubePlayer) {
+        console.log('Player already initialized');
+        return;
+    }
+    
+    if (!youtubeAudioPlayer) {
+        console.error('Player element not found');
+        return;
+    }
+    
+    if (!window.YT || !window.YT.Player) {
+        console.error('YouTube API not available');
+        return;
+    }
+    
+    console.log('Initializing YouTube player...');
+    
+    try {
+        youtubePlayer = new YT.Player('youtubeAudioPlayer', {
+            height: '0',
+            width: '0',
+            playerVars: {
+                listType: 'playlist',
+                list: PLAYLIST_ID,
+                autoplay: 0,
+                controls: 0,
+                disablekb: 1,
+                enablejsapi: 1,
+                fs: 0,
+                iv_load_policy: 3,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0
+            },
+            events: {
+                'onReady': function(event) {
+                    console.log('✅ Player ready!');
+                    isPlayerReady = true;
+                    if (musicPlayButton) {
+                        musicPlayButton.classList.remove('loading');
+                    }
+                },
+                'onStateChange': function(event) {
+                    const state = event.data;
+                    const playIcon = musicPlayButton ? musicPlayButton.querySelector('.play-icon') : null;
+                    
+                    console.log('Player state changed:', state);
+                    
+                    if (state === YT.PlayerState.PLAYING || state === 1) {
+                        isPlaying = true;
+                        if (musicPlayButton) musicPlayButton.classList.add('playing');
+                        if (playIcon) playIcon.textContent = '❚❚';
+                        console.log('▶ Playing');
+                    } else if (state === YT.PlayerState.PAUSED || state === 2) {
+                        isPlaying = false;
+                        if (musicPlayButton) musicPlayButton.classList.remove('playing');
+                        if (playIcon) playIcon.textContent = '▶';
+                        console.log('⏸ Paused');
+                    } else if (state === YT.PlayerState.CUED || state === 5) {
+                        isPlayerReady = true;
+                        if (musicPlayButton) musicPlayButton.classList.remove('loading');
+                        console.log('✅ Playlist cued and ready');
+                    } else if (state === YT.PlayerState.BUFFERING || state === 3) {
+                        console.log('⏳ Buffering...');
+                    }
+                },
+                'onError': function(event) {
+                    console.error('❌ Player error:', event.data);
+                    if (musicPlayButton) {
+                        const playIcon = musicPlayButton.querySelector('.play-icon');
+                        if (playIcon) playIcon.textContent = '⚠';
+                    }
+                }
+            }
+        });
+        console.log('Player initialization started');
+        
+        // Fallback: If onReady doesn't fire, wait a bit more and check player methods
+        setTimeout(() => {
+            if (!isPlayerReady && youtubePlayer) {
+                console.log('⚠️ onReady did not fire, checking player methods...');
+                // Check if player methods are available
+                if (typeof youtubePlayer.getPlayerState === 'function' && 
+                    typeof youtubePlayer.playVideo === 'function') {
+                    console.log('✅ Player methods available, enabling...');
+                    isPlayerReady = true;
+                    if (musicPlayButton) {
+                        musicPlayButton.classList.remove('loading');
+                    }
+                } else {
+                    console.log('⏳ Player methods not ready yet, will retry...');
+                    // Retry after another second
+                    setTimeout(() => {
+                        if (!isPlayerReady && youtubePlayer) {
+                            if (typeof youtubePlayer.playVideo === 'function') {
+                                console.log('✅ Player ready after retry');
+                                isPlayerReady = true;
+                                if (musicPlayButton) {
+                                    musicPlayButton.classList.remove('loading');
+                                }
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('Error creating player:', error);
+        youtubePlayer = null;
+    }
+}
+
+// Set global callback for YouTube API
+if (typeof window !== 'undefined') {
+    window.onYouTubeIframeAPIReady = function() {
+        console.log('YouTube API ready');
+        // Wait a bit for DOM to be fully ready
+        setTimeout(initYouTubePlayer, 100);
+    };
+}
+
+// Music Player
+function initMusicPlayer() {
+    if (!musicPlayer || !musicPlayButton || !musicCloseButton || !musicRestoreButton) return;
+    
+    // Initially show loading state (but don't disable - allow clicks for debugging)
+    if (musicPlayButton) {
+        musicPlayButton.classList.add('loading');
+        // Don't disable the button - just show loading state visually
+        // Disabled buttons don't trigger click events
+    }
+    
+    // Handle play button click
+    musicPlayButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!youtubePlayer) return;
+        
+        // If not ready, check if methods are available anyway
+        if (!isPlayerReady) {
+            if (typeof youtubePlayer.playVideo === 'function') {
+                isPlayerReady = true;
+                if (musicPlayButton) musicPlayButton.classList.remove('loading');
+            } else {
+                return;
+            }
+        }
+        
+        try {
+            if (isPlaying) {
+                youtubePlayer.pauseVideo();
+            } else {
+                // Try playVideoAt(0) for playlists, fallback to playVideo()
+                if (youtubePlayer.playVideoAt && typeof youtubePlayer.playVideoAt === 'function') {
+                    youtubePlayer.playVideoAt(0);
+                } else {
+                    youtubePlayer.playVideo();
+                }
+            }
+        } catch (error) {
+            // Ignore postMessage errors (harmless)
+            if (!error.message || !error.message.includes('postMessage')) {
+                console.error('Error controlling player:', error);
+            }
+        }
+    });
+    
+    // Function to hide player
+    function hidePlayer() {
+        musicPlayer.classList.remove('visible');
+        musicPlayer.classList.add('hidden');
+        musicRestoreButton.classList.remove('hidden');
+        musicRestoreButton.classList.add('visible');
+    }
+    
+    // Function to show player
+    function showPlayer() {
+        musicPlayer.classList.remove('hidden');
+        musicPlayer.classList.add('visible');
+        musicRestoreButton.classList.remove('visible');
+        musicRestoreButton.classList.add('hidden');
+    }
+    
+    // Handle close button click - hide player
+    musicCloseButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hidePlayer();
+    });
+    
+    // Handle restore button click - show player
+    musicRestoreButton.addEventListener('click', () => {
+        showPlayer();
+    });
+    
+    // Check if API is already loaded and initialize
+    if (window.YT && window.YT.Player) {
+        setTimeout(initYouTubePlayer, 100);
+    }
+}
+
 // Initialize theme and language on load
 initTheme();
 initLanguage();
 initSearchLanguage();
+initMusicPlayer();
 
 // Handle Enter key for immediate search
 searchInput.addEventListener('keydown', (e) => {

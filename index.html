@@ -141,6 +141,28 @@
         </section>
     </main>
 
+    <!-- Music Player -->
+    <div class="music-player visible" id="musicPlayer">
+        <div class="music-player-container">
+            <button class="music-play-button" id="musicPlayButton" aria-label="Play music">
+                <span class="play-icon">▶</span>
+            </button>
+            <span class="music-player-text" id="musicPlayerText" data-translate="playFromOurRegion">Bizim oralardan çal</span>
+            <button class="music-close-button" id="musicCloseButton" aria-label="Hide music player">
+                <span class="close-icon">×</span>
+            </button>
+            <div class="music-player-iframe-wrapper">
+                <div id="youtubeAudioPlayer"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Music Player Restore Button (shown when player is hidden) -->
+    <button class="music-restore-button hidden" id="musicRestoreButton" aria-label="Show music player">
+        <span class="restore-icon">♪</span>
+    </button>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="app.js"></script>
 </body>
 </html>
