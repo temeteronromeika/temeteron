@@ -23,6 +23,10 @@ body {
     color: #1a1a1a;
 }
 
+.light-mode .hero-title {
+    color: #ffffff !important;
+}
+
 .light-mode h1, .light-mode h2, .light-mode h3 {
     color: #1a3d2e;
 }
