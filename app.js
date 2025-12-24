@@ -749,7 +749,7 @@ async function generateElevenLabsAudio(text, voiceId = ELEVENLABS_VOICE_ID) {
             },
             body: JSON.stringify({
                 text: text,
-                model_id: 'eleven_multilingual_v2', // v3 might not be available, using v2
+                model_id: 'eleven_multilingual_v3', // v3 might not be available, using v2
                 voice_settings: {
                     stability: 0.5,
                     similarity_boost: 0.75
