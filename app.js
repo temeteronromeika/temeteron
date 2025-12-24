@@ -56,6 +56,14 @@ const heroEnglish = document.getElementById('heroEnglish');
 const heroTurkish = document.getElementById('heroTurkish');
 const languageSelector = document.getElementById('languageSelector');
 const langButtons = languageSelector ? languageSelector.querySelectorAll('.lang-btn') : [];
+const searchLanguageSelector = document.getElementById('searchLanguageSelector');
+const searchLangButtons = searchLanguageSelector ? searchLanguageSelector.querySelectorAll('.search-lang-btn') : [];
+const heroPhoneticLatin = document.getElementById("heroPhoneticLatin");
+const heroPhoneticIpa = document.getElementById("heroPhoneticIpa");
+
+// Search language management
+let currentSearchLanguage = localStorage.getItem('temeteron-search-language') || 'romeika';
+
 
 // Language Management
 let currentLanguage = localStorage.getItem('temeteron-language') || 'en';
@@ -131,8 +139,6 @@ function updateToggleIcon(theme) {
 }
 
 // Search Functionality - Get suggestions for autocomplete
-// Uses Supabase search_words RPC function which handles phonetic matching,
-// normalization, accent-insensitive, and typo-tolerant search
 async function getSuggestions(query) {
     const trimmedQuery = query.trim();
     
@@ -142,9 +148,25 @@ async function getSuggestions(query) {
     }
     
     try {
-        // Call Supabase RPC function that handles all search logic
-        const { data, error } = await supabaseClient
-            .rpc('search_words', { query: trimmedQuery });
+        let data, error;
+        
+        if (currentSearchLanguage === 'romeika') {
+            // Use RPC function for Romeika search (phonetic matching)
+            const result = await supabaseClient
+                .rpc('search_words', { query: trimmedQuery });
+            data = result.data;
+            error = result.error;
+        } else {
+            // Search in specific language field
+            const searchField = currentSearchLanguage;
+            const result = await supabaseClient
+                .from('words')
+                .select('*')
+                .ilike(searchField, `%${trimmedQuery}%`)
+                .limit(7);
+            data = result.data;
+            error = result.error;
+        }
         
         if (error) {
             console.error('Search error:', error);
@@ -179,6 +201,8 @@ function displaySuggestions(suggestions) {
             hideSuggestions();
             displayResultInHero(suggestion.romeika, {
                 greek: suggestion.greek || '',
+                phonetic_latin: suggestion.phonetic_latin || '',
+                phonetic_ipa: suggestion.phonetic_ipa || '',
                 turkish: suggestion.turkish || '',
                 english: suggestion.english || ''
             });
@@ -196,8 +220,6 @@ function hideSuggestions() {
 }
 
 // Perform full search (when Enter is pressed or suggestion is clicked)
-// Uses Supabase search_words RPC function which handles phonetic matching,
-// normalization, accent-insensitive, and typo-tolerant search
 async function performSearch(query) {
     const trimmedQuery = query.trim();
     
@@ -208,10 +230,25 @@ async function performSearch(query) {
     }
     
     try {
-        // Call Supabase RPC function that handles all search logic
-        // Function returns up to 20 results, ordered by relevance
-        const { data, error } = await supabaseClient
-            .rpc('search_words', { query: trimmedQuery });
+        let data, error;
+        
+        if (currentSearchLanguage === 'romeika') {
+            // Use RPC function for Romeika search (phonetic matching)
+            const result = await supabaseClient
+                .rpc('search_words', { query: trimmedQuery });
+            data = result.data;
+            error = result.error;
+        } else {
+            // Search in specific language field
+            const searchField = currentSearchLanguage;
+            const result = await supabaseClient
+                .from('words')
+                .select('*')
+                .ilike(searchField, `%${trimmedQuery}%`)
+                .limit(20);
+            data = result.data;
+            error = result.error;
+        }
         
         if (error) {
             console.error('Search error:', error);
@@ -224,6 +261,8 @@ async function performSearch(query) {
             const firstResult = data[0];
             displayResultInHero(firstResult.romeika, {
                 greek: firstResult.greek || '',
+                phonetic_latin: firstResult.phonetic_latin || '',
+                phonetic_ipa: firstResult.phonetic_ipa || '',
                 turkish: firstResult.turkish || '',
                 english: firstResult.english || ''
             });
@@ -242,6 +281,27 @@ function displayResultInHero(word, data) {
     
     // Update hero result content
     heroWord.textContent = word;
+    
+    // Display phonetic_latin if present
+    if (heroPhoneticLatin) {
+        if (data.phonetic_latin && data.phonetic_latin.trim()) {
+            heroPhoneticLatin.textContent = data.phonetic_latin;
+            heroPhoneticLatin.style.display = 'block';
+        } else {
+            heroPhoneticLatin.style.display = 'none';
+        }
+    }
+    
+    // Display phonetic_ipa if present
+    if (heroPhoneticIpa) {
+        if (data.phonetic_ipa && data.phonetic_ipa.trim()) {
+            heroPhoneticIpa.textContent = data.phonetic_ipa;
+            heroPhoneticIpa.style.display = 'block';
+        } else {
+            heroPhoneticIpa.style.display = 'none';
+        }
+    }
+    
     if (heroGreek) heroGreek.textContent = data.greek || '';
     if (heroEnglish) heroEnglish.textContent = data.english || '';
     if (heroTurkish) heroTurkish.textContent = data.turkish || '';
@@ -309,6 +369,48 @@ function debounce(func, wait) {
     };
 }
 
+// Search Language Management
+function initSearchLanguage() {
+    const savedSearchLang = localStorage.getItem('temeteron-search-language');
+    if (savedSearchLang && ['romeika', 'greek', 'turkish', 'english'].includes(savedSearchLang)) {
+        currentSearchLanguage = savedSearchLang;
+    } else {
+        currentSearchLanguage = 'romeika';
+    }
+    updateSearchLanguage(currentSearchLanguage);
+}
+
+function updateSearchLanguage(lang) {
+    currentSearchLanguage = lang;
+    localStorage.setItem('temeteron-search-language', lang);
+    
+    // Update active button
+    if (searchLangButtons && searchLangButtons.length > 0) {
+        searchLangButtons.forEach(btn => {
+            if (btn.getAttribute('data-search-lang') === lang) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    // Update placeholder text
+    const placeholders = {
+        romeika: 'Search a Romeika word…',
+        greek: 'Search in Greek…',
+        turkish: 'Search in Turkish…',
+        english: 'Search in English…'
+    };
+    if (searchInput) {
+        searchInput.placeholder = placeholders[lang] || placeholders.romeika;
+    }
+}
+
+function handleSearchLanguageChange(lang) {
+    updateSearchLanguage(lang);
+}
+
 // Event Listeners
 modeToggle.addEventListener('click', toggleTheme);
 
@@ -317,6 +419,15 @@ if (langButtons && langButtons.length > 0) {
         btn.addEventListener('click', (e) => {
             const lang = e.target.getAttribute('data-lang');
             handleLanguageChange(lang);
+        });
+    });
+}
+
+if (searchLangButtons && searchLangButtons.length > 0) {
+    searchLangButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const lang = e.target.closest('.search-lang-btn').getAttribute('data-search-lang');
+            handleSearchLanguageChange(lang);
         });
     });
 }
@@ -344,6 +455,7 @@ document.addEventListener('click', (e) => {
 // Initialize theme and language on load
 initTheme();
 initLanguage();
+initSearchLanguage();
 
 // Handle Enter key for immediate search
 searchInput.addEventListener('keydown', (e) => {

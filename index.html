@@ -29,6 +29,20 @@
     <main>
         <section class="word-search-section">
             <div class="search-container">
+                <div class="search-language-selector" id="searchLanguageSelector">
+                    <button class="search-lang-btn active" data-search-lang="romeika" id="searchLangRomeika">
+                        <span>Romeika</span>
+                    </button>
+                    <button class="search-lang-btn" data-search-lang="greek" id="searchLangGreek">
+                        <span>Greek</span>
+                    </button>
+                    <button class="search-lang-btn" data-search-lang="turkish" id="searchLangTurkish">
+                        <span>Turkish</span>
+                    </button>
+                    <button class="search-lang-btn" data-search-lang="english" id="searchLangEnglish">
+                        <span>English</span>
+                    </button>
+                </div>
                 <div class="search-input-wrapper">
                     <input 
                         type="text" 
@@ -55,6 +69,10 @@
                 </div>
                 <div class="hero-result" id="heroResult" style="display: none;">
                     <h1 class="hero-title" id="heroWord"></h1>
+                    <div class="hero-phonetics">
+                        <div class="hero-phonetic-latin" id="heroPhoneticLatin" style="display: none;"></div>
+                        <div class="hero-phonetic-ipa" id="heroPhoneticIpa" style="display: none;"></div>
+                    </div>
                     <div class="hero-result-details">
                         <div class="hero-result-row">
                             <span class="hero-result-label" data-translate="greekLabel">Greek:</span>
@@ -126,4 +144,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-

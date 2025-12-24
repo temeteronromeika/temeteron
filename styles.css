@@ -150,6 +150,65 @@ body {
     text-align: center;
 }
 
+/* Search Language Selector */
+.search-language-selector {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-lang-btn {
+    background: none;
+    border: 1px solid;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    border-radius: 4px;
+}
+
+.dark-mode .search-lang-btn {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.6);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .search-lang-btn:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .search-lang-btn.active {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+    font-weight: 500;
+}
+
+.light-mode .search-lang-btn {
+    border-color: rgba(26, 61, 46, 0.2);
+    color: rgba(26, 61, 46, 0.6);
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.light-mode .search-lang-btn:hover {
+    border-color: rgba(26, 61, 46, 0.4);
+    color: rgba(26, 61, 46, 0.8);
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.light-mode .search-lang-btn.active {
+    border-color: rgba(26, 61, 46, 0.6);
+    color: #1a3d2e;
+    background-color: rgba(26, 61, 46, 0.1);
+    font-weight: 500;
+}
+
 .search-input-wrapper {
     position: relative;
     width: 100%;
@@ -326,6 +385,30 @@ body {
     margin-bottom: 1rem;
     color: #ffffff;
     transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.hero-phonetics {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.hero-phonetic-latin {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.01em;
+}
+
+.hero-phonetic-ipa {
+    font-size: clamp(0.875rem, 1.75vw, 1.125rem);
+    font-weight: 400;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.01em;
 }
 
 .hero-subtitle {
@@ -567,4 +650,3 @@ body {
         min-height: 50vh;
     }
 }
-
