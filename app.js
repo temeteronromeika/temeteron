@@ -36,7 +36,8 @@ const translations = {
 };
 
 // Supabase Configuration
-const SUPABASE_URL = 'PLS2AaukaGyNgiM_-xYk9VAN5C-Tb1WGHE&si=YtCtf24CGCgc8HvD';
+const SUPABASE_URL = 'https://uahpzvhcpetrozwdshil.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhaHB6dmhjcGV0cm96d2RzaGlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzMDk0NDQsImV4cCI6MjA4MDg4NTQ0NH0.ja3lxBEEnEPkZUC5rsB6ugn4o6Li4SXBffrbwX96dKw';
 
 // Initialize Supabase client
 const { createClient } = supabase;
