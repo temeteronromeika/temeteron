@@ -791,7 +791,7 @@ function initMusicPlayer() {
 
 // Phonetic Pronunciation with ElevenLabs + Supabase Storage Cache
 const ELEVENLABS_API_KEY = 'sk_9a83e280dce6178924e52e1cba1099afb65eea57f70d5e4e';
-const ELEVENLABS_VOICE_ID = 'wykE1oPxFaMrxdpOtFt6';
+const ELEVENLABS_VOICE_ID = 'jfIS2w2yJi0grJZPyEsk';
 const AUDIO_BUCKET = 'pronunciations'; // Supabase Storage bucket name
 
 // Generate a unique filename from text
@@ -863,7 +863,7 @@ async function generateElevenLabsAudio(text, voiceId = ELEVENLABS_VOICE_ID) {
             },
             body: JSON.stringify({
                 text: text,
-                model_id: 'eleven_multilingual_v3', // v3 might not be available, using v2
+                model_id: 'eleven_v3', // v3 might not be available, using v2
                 voice_settings: {
                     stability: 0.5,
                     similarity_boost: 0.75
