@@ -69,6 +69,12 @@ const musicPlayButton = document.getElementById('musicPlayButton');
 const musicCloseButton = document.getElementById('musicCloseButton');
 const musicRestoreButton = document.getElementById('musicRestoreButton');
 const youtubeAudioPlayer = document.getElementById('youtubeAudioPlayer');
+const wordOfDayCard = document.getElementById('wordOfDayCard');
+const wodRomeika = document.getElementById('wodRomeika');
+const wodGreek = document.getElementById('wodGreek');
+const wodTurkish = document.getElementById('wodTurkish');
+const wodEnglish = document.getElementById('wodEnglish');
+
 
 // Search language management
 let currentSearchLanguage = localStorage.getItem('temeteron-search-language') || 'romeika';
@@ -76,6 +82,113 @@ let currentSearchLanguage = localStorage.getItem('temeteron-search-language') ||
 
 // Language Management
 let currentLanguage = localStorage.getItem('temeteron-language') || 'en';
+
+function getLocalDateKey() {
+    // UTC yerine kullanıcının local gününe göre (Istanbul dahil) sabit anahtar
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  
+  function renderWordOfDay(w) {
+    if (!wodRomeika || !wodGreek || !wodTurkish || !wodEnglish) return;
+  
+    wodRomeika.textContent = w?.romeika || '—';
+    wodGreek.textContent = w?.greek || '—';
+    wodTurkish.textContent = w?.turkish || '—';
+    wodEnglish.textContent = w?.english || '—';
+  
+    // Bonus: karta tıklayınca hero’da göster
+    if (wordOfDayCard && w?.romeika) {
+      wordOfDayCard.style.cursor = 'pointer';
+      wordOfDayCard.onclick = () => {
+        displayResultInHero(w.romeika, {
+          greek: w.greek || '',
+          phonetic_latin: w.phonetic_latin || '',
+          phonetic_ipa: w.phonetic_ipa || '',
+          turkish: w.turkish || '',
+          english: w.english || ''
+        });
+      };
+    }
+  }
+  
+  async function pickRandomWordFromDB() {
+    // 1) count al
+    const countRes = await supabaseClient
+      .from('words')
+      .select('id', { count: 'exact', head: true });
+  
+    const total = countRes.count;
+  
+    // Eğer count yoksa (policy/kolon/izin), fallback
+    if (!total || total < 1) {
+      const fallback = await supabaseClient
+        .from('words')
+        .select('romeika, greek, turkish, english, phonetic_latin, phonetic_ipa')
+        .limit(500);
+  
+      if (!fallback.data || fallback.data.length === 0) return null;
+      return fallback.data[Math.floor(Math.random() * fallback.data.length)];
+    }
+  
+    // 2) random offset ile 1 kayıt çek
+    const offset = Math.floor(Math.random() * total);
+  
+    const rowRes = await supabaseClient
+      .from('words')
+      .select('romeika, greek, turkish, english, phonetic_latin, phonetic_ipa')
+      .order('id', { ascending: true })
+      .range(offset, offset);
+  
+    if (rowRes.error) throw rowRes.error;
+    return rowRes.data?.[0] || null;
+  }
+  
+  async function initWordOfDay() {
+    // HTML tarafı hazır değilse çık
+    if (!wodRomeika || !wodGreek || !wodTurkish || !wodEnglish) return;
+  
+    // İlk yüklemede placeholder
+    wodRomeika.textContent = '…';
+    wodGreek.textContent = '…';
+    wodTurkish.textContent = '…';
+    wodEnglish.textContent = '…';
+  
+    const todayKey = getLocalDateKey();
+    const cachedDate = localStorage.getItem('temeteron-wod-date');
+    const cachedWordStr = localStorage.getItem('temeteron-wod-word');
+  
+    // Aynı gün cache varsa onu göster
+    if (cachedDate === todayKey && cachedWordStr) {
+      try {
+        const cachedWord = JSON.parse(cachedWordStr);
+        renderWordOfDay(cachedWord);
+        return;
+      } catch {
+        // bozuk cache -> devam et
+      }
+    }
+  
+    // Yoksa DB’den yeni rastgele seç
+    try {
+      const word = await pickRandomWordFromDB();
+      if (!word) {
+        renderWordOfDay(null);
+        return;
+      }
+  
+      localStorage.setItem('temeteron-wod-date', todayKey);
+      localStorage.setItem('temeteron-wod-word', JSON.stringify(word));
+      renderWordOfDay(word);
+    } catch (e) {
+      console.error('Word of the day error:', e);
+      renderWordOfDay(null);
+    }
+  }
+  
 
 function initLanguage() {
     const savedLanguage = localStorage.getItem('temeteron-language');
@@ -133,6 +246,7 @@ function initTheme() {
         updateToggleIcon('dark-mode');
     }
 }
+
 
 function toggleTheme() {
     const currentTheme = body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
@@ -902,6 +1016,8 @@ initLanguage();
 initSearchLanguage();
 initMusicPlayer();
 initPhoneticPlayer();
+initWordOfDay();
+
 
 // Handle Enter key for immediate search
 searchInput.addEventListener('keydown', (e) => {
